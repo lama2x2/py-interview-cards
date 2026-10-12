@@ -1,0 +1,409 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Python Собес 150</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+  /* Layout: sticky filters → stat bar → flashcard stage → fixed bottom action bar (flip / SRS grade / browse nav) */
+  :root{
+    --bg:#f4f2ee; --surface:#ffffff; --fg:#1d1f24; --muted:#6a6f78;
+    --line:#e3dfd7; --accent:#c6613a; --accent-2:#2f7d77;
+    --g-again:#c0493f; --g-hard:#b67a2e; --g-good:#2f8f5b; --g-easy:#2f72a8;
+    --shadow:0 1px 2px rgba(28,30,36,.06),0 12px 32px rgba(28,30,36,.10);
+    --radius:18px;
+    --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+    --sans:"IBM Plex Sans",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --bg:#15171b; --surface:#1e2127; --fg:#ececef; --muted:#9aa0a9;
+    --line:#2d313a; --accent:#e0794f; --accent-2:#4fb3aa;
+    --g-again:#e06a60; --g-hard:#d79a4a; --g-good:#55c184; --g-easy:#5aa3dd;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 16px 40px rgba(0,0,0,.45);
+    color-scheme:dark;
+  }}
+  :root[data-theme="dark"]{
+    --bg:#15171b; --surface:#1e2127; --fg:#ececef; --muted:#9aa0a9;
+    --line:#2d313a; --accent:#e0794f; --accent-2:#4fb3aa;
+    --g-again:#e06a60; --g-hard:#d79a4a; --g-good:#55c184; --g-easy:#5aa3dd;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 16px 40px rgba(0,0,0,.45);
+    color-scheme:dark;
+  }
+  *{box-sizing:border-box}
+  body{background:var(--bg);color:var(--fg);font-family:var(--sans);line-height:1.5;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:720px;margin:0 auto;padding-inline:16px;padding-block:16px 128px;min-height:100%}
+
+  header.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+  .brand{display:flex;align-items:baseline;gap:9px;min-width:0}
+  .brand h1{font-size:1.3rem;font-weight:700;letter-spacing:-.01em;margin:0}
+  .brand .snake{font-family:var(--mono);color:var(--accent);font-weight:600}
+  .top-btns{display:flex;gap:8px}
+  .mini{background:none;border:1px solid var(--line);color:var(--muted);border-radius:999px;
+    padding:6px 12px;font:inherit;font-size:.78rem;cursor:pointer}
+  .mini:hover{color:var(--fg);border-color:var(--muted)}
+  .mini[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+
+  .frow{display:flex;gap:7px;overflow-x:auto;padding-bottom:6px;margin-bottom:8px;scrollbar-width:thin}
+  .frow .lbl{flex:0 0 auto;align-self:center;font-size:.7rem;color:var(--muted);font-family:var(--mono);
+    text-transform:uppercase;letter-spacing:.05em;padding-right:2px}
+  .chip{flex:0 0 auto;border:1px solid var(--line);background:var(--surface);color:var(--muted);
+    border-radius:999px;padding:5px 12px;font:inherit;font-size:.8rem;cursor:pointer;white-space:nowrap;transition:.15s}
+  .chip:hover{color:var(--fg)}
+  .chip[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+  .chip[data-lvl="Джун"][aria-pressed="true"]{background:var(--g-good);border-color:var(--g-good);color:#fff}
+  .chip[data-lvl="Мид"][aria-pressed="true"]{background:var(--g-easy);border-color:var(--g-easy);color:#fff}
+  .chip[data-lvl="Синьер"][aria-pressed="true"]{background:var(--g-hard);border-color:var(--g-hard);color:#fff}
+  .chip[data-lvl="Лид"][aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+
+  .meta{display:flex;align-items:center;gap:14px;margin:4px 0 12px;font-size:.78rem;color:var(--muted);
+    font-variant-numeric:tabular-nums;flex-wrap:wrap}
+  .meta b{color:var(--fg)}
+  .meta .dueN{color:var(--g-good)}
+  .meta .newN{color:var(--g-easy)}
+  .bar{height:5px;background:var(--line);border-radius:999px;overflow:hidden;flex:1;min-width:80px}
+  .bar>span{display:block;height:100%;background:var(--accent);width:0;transition:width .25s}
+
+  .stage{perspective:1700px;position:relative}
+  .card{position:relative;width:100%;min-height:380px;cursor:pointer;
+    transition:transform .5s cubic-bezier(.4,.1,.2,1);transform-style:preserve-3d}
+  .card.flip{transform:rotateY(180deg)}
+  .face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;
+    background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);
+    padding:26px 24px;display:flex;flex-direction:column;overflow:auto}
+  .face.back{transform:rotateY(180deg)}
+  .tags{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:16px}
+  .tag{font-family:var(--mono);font-size:.66rem;letter-spacing:.05em;text-transform:uppercase;
+    border:1px solid var(--line);border-radius:999px;padding:3px 9px}
+  .tag.cat{color:var(--accent-2)}
+  .tag.lv{color:var(--fg)}
+  .tag.lv[data-lvl="Джун"]{color:var(--g-good);border-color:color-mix(in srgb,var(--g-good) 45%,var(--line))}
+  .tag.lv[data-lvl="Мид"]{color:var(--g-easy);border-color:color-mix(in srgb,var(--g-easy) 45%,var(--line))}
+  .tag.lv[data-lvl="Синьер"]{color:var(--g-hard);border-color:color-mix(in srgb,var(--g-hard) 45%,var(--line))}
+  .tag.lv[data-lvl="Лид"]{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
+  .q{font-size:1.26rem;font-weight:600;letter-spacing:-.01em;text-wrap:balance;margin:auto 0}
+  .back .q{font-size:1rem;margin:0 0 12px;color:var(--muted);font-weight:500}
+  .ans{font-size:.97rem}
+  .ans ul,.ans ol{margin:.3rem 0;padding-left:1.15rem}
+  .ans li{margin:.3rem 0}
+  .ans p{margin:.5rem 0}
+  .ans code,.q code{font-family:var(--mono);font-size:.85em;background:color-mix(in srgb,var(--accent-2) 14%,transparent);
+    padding:.08em .35em;border-radius:5px;word-break:break-word}
+  .ans b{color:var(--fg)}
+  /* SVG diagrams, theme-aware */
+  .dgm{display:block;max-width:100%;height:auto;margin:14px auto 6px}
+  .dgm text{fill:var(--fg);font-family:var(--mono);font-size:11px}
+  .dgm .mut{fill:var(--muted)}
+  .dgm .ln{stroke:var(--muted);fill:none;stroke-width:1.5}
+  .dgm .ac{stroke:var(--accent);fill:none;stroke-width:2}
+  .dgm .ac2{stroke:var(--accent-2);fill:none;stroke-width:2}
+  .dgm .fl{fill:var(--accent);opacity:.16}
+  .dgm .fl2{fill:var(--accent-2);opacity:.16}
+  .dgm .bx{fill:var(--surface);stroke:var(--line);stroke-width:1.5}
+  .dgm .bxa{fill:color-mix(in srgb,var(--accent) 12%,var(--surface));stroke:var(--accent);stroke-width:1.5}
+  /* expandable context */
+  .ctx{margin-top:14px;border:1px solid var(--line);border-radius:12px;overflow:hidden;
+    background:color-mix(in srgb,var(--accent-2) 6%,var(--surface))}
+  .ctx>summary{cursor:pointer;list-style:none;padding:10px 14px;font-size:.82rem;font-weight:600;
+    color:var(--accent-2);display:flex;align-items:center;gap:8px;user-select:none}
+  .ctx>summary::-webkit-details-marker{display:none}
+  .ctx>summary::before{content:"▸";font-size:.7rem;transition:transform .15s}
+  .ctx[open]>summary::before{transform:rotate(90deg)}
+  .ctx .body{padding:0 14px 13px;font-size:.92rem;border-top:1px solid var(--line);padding-top:11px}
+  .ctx .body p{margin:.45rem 0}
+  .ctx .body b{color:var(--fg)}
+  .hint{margin-top:16px;padding-top:0;font-size:.72rem;color:var(--muted);font-family:var(--mono)}
+
+  .done{display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;
+    min-height:380px;background:var(--surface);border:1px dashed var(--line);border-radius:var(--radius);padding:30px}
+  .done h2{margin:0 0 6px;font-size:1.3rem}
+  .done p{margin:0 0 18px;color:var(--muted);font-size:.9rem}
+
+  .nav{position:fixed;left:0;right:0;bottom:0;background:color-mix(in srgb,var(--bg) 88%,transparent);
+    backdrop-filter:blur(10px);border-top:1px solid var(--line);
+    padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px))}
+  .nav-inner{max-width:720px;margin:0 auto;display:flex;align-items:center;gap:9px}
+  .btn{flex:0 0 auto;border:1px solid var(--line);background:var(--surface);color:var(--fg);
+    border-radius:12px;padding:11px 15px;font:inherit;font-size:.9rem;cursor:pointer;transition:.15s}
+  .btn:hover{border-color:var(--muted)}
+  .btn.round{width:46px;height:46px;padding:0;font-size:1.25rem;display:grid;place-items:center}
+  .btn.wide{flex:1}
+  .grow{flex:1}
+  .count{font-family:var(--mono);font-size:.82rem;color:var(--muted);text-align:center;min-width:58px}
+  /* grade buttons */
+  .grades{display:none;gap:8px;width:100%}
+  .grades.show{display:flex}
+  .gr{flex:1;border:1px solid;border-radius:12px;padding:9px 6px;font:inherit;cursor:pointer;background:var(--surface);
+    display:flex;flex-direction:column;align-items:center;gap:2px;transition:.15s}
+  .gr .t{font-size:.86rem;font-weight:600}
+  .gr .i{font-size:.66rem;color:var(--muted);font-family:var(--mono)}
+  .gr.again{border-color:var(--g-again);color:var(--g-again)}
+  .gr.hard{border-color:var(--g-hard);color:var(--g-hard)}
+  .gr.good{border-color:var(--g-good);color:var(--g-good)}
+  .gr.easy{border-color:var(--g-easy);color:var(--g-easy)}
+  .gr:hover{filter:brightness(1.05);transform:translateY(-1px)}
+  .browse{display:flex;align-items:center;gap:9px;width:100%}
+  .browse.hide{display:none}
+
+  @media (max-width:430px){
+    .brand h1{font-size:1.12rem}
+    .face{padding:22px 18px}
+    .q{font-size:1.12rem}
+    .gr .i{display:none}
+    .btn{padding:10px 12px;font-size:.84rem}
+  }
+  @media (prefers-reduced-motion:reduce){.card,.gr{transition:none}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand"><h1><span class="snake">py</span> Собес&nbsp;150</h1></div>
+    <div class="top-btns">
+      <button class="mini" id="mode-study" aria-pressed="true">учить</button>
+      <button class="mini" id="mode-browse" aria-pressed="false">все</button>
+      <button class="mini" id="theme" aria-label="Тема">◐</button>
+    </div>
+  </header>
+
+  <div class="frow" id="f-cat"><span class="lbl">тема</span></div>
+  <div class="frow" id="f-lvl"><span class="lbl">грейд</span></div>
+
+  <div class="meta">
+    <span>К повторению <b class="dueN" id="m-due">0</b></span>
+    <span>Новых <b class="newN" id="m-new">0</b></span>
+    <span>Изучено <b id="m-learn">0</b> / <span id="m-total">0</span></span>
+    <div class="bar"><span id="progbar"></span></div>
+  </div>
+
+  <div class="stage">
+    <div class="card" id="card" role="button" tabindex="0" aria-label="Карточка — нажми, чтобы показать ответ">
+      <div class="face front">
+        <div class="tags"><span class="tag cat" id="f-tag">—</span><span class="tag lv" id="f-lv">—</span></div>
+        <div class="q" id="f-q"></div>
+        <div class="hint">нажми / пробел — показать ответ</div>
+      </div>
+      <div class="face back">
+        <div class="tags"><span class="tag cat" id="b-tag">—</span><span class="tag lv" id="b-lv">—</span></div>
+        <div class="q" id="b-q"></div>
+        <div class="ans" id="b-a"></div>
+        <div class="hint" id="b-hint"></div>
+      </div>
+    </div>
+    <div class="done" id="done">
+      <h2>На сегодня всё 🎉</h2>
+      <p id="done-sub">Повторения по этому фильтру закрыты.</p>
+      <button class="btn" id="study-ahead">Учить наперёд</button>
+    </div>
+  </div>
+
+  <nav class="nav">
+    <div class="nav-inner">
+      <!-- study mode -->
+      <button class="btn wide" id="reveal">Показать ответ</button>
+      <div class="grades" id="grades">
+        <button class="gr again" data-g="1"><span class="t">Снова</span><span class="i" id="i1"></span></button>
+        <button class="gr hard"  data-g="2"><span class="t">Трудно</span><span class="i" id="i2"></span></button>
+        <button class="gr good"  data-g="3"><span class="t">Хорошо</span><span class="i" id="i3"></span></button>
+        <button class="gr easy"  data-g="4"><span class="t">Легко</span><span class="i" id="i4"></span></button>
+      </div>
+      <!-- browse mode -->
+      <div class="browse hide" id="browse">
+        <button class="btn round" id="prev" aria-label="Назад">‹</button>
+        <div class="count" id="count">1 / 1</div>
+        <button class="btn round" id="next" aria-label="Вперёд">›</button>
+        <span class="grow"></span>
+        <button class="btn round" id="flipBtn" aria-label="Перевернуть">⟲</button>
+        <button class="btn round" id="shuffle" aria-label="Перемешать">⇄</button>
+      </div>
+    </div>
+  </nav>
+</div>
+
+<script src="cards.js" charset="utf-8"></script>
+<script src="context.js" charset="utf-8"></script>
+<script>
+const $ = s => document.querySelector(s);
+const DAY = 86400000, MIN = 60000;
+const LEVELS = ["Джун","Мид","Синьер","Лид"];
+
+// stable id from question text (survives reorder / answer edits)
+function hid(s){let h=0;for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))|0;return "c"+(h>>>0).toString(36);}
+(window.CARDS||[]).forEach(c=>{ c._id=hid(c.q); if(window.CTX&&CTX[c.q]) c.ctx=CTX[c.q]; });
+
+// ---- SRS persistence ----
+function loadSRS(){try{return JSON.parse(localStorage.getItem("py150_srs")||"{}");}catch(e){return {};}}
+function saveSRS(){try{localStorage.setItem("py150_srs",JSON.stringify(SRS));}catch(e){}}
+let SRS = loadSRS();
+
+// pure scheduler (SM-2-подобный). grade: 1 again,2 hard,3 good,4 easy
+function sched(st, grade){
+  st = st ? {...st} : {ivl:0, ease:2.5, reps:0, lapses:0};
+  if(grade===1){
+    st.lapses++; st.reps=0; st.ease=Math.max(1.3, st.ease-0.2); st.ivl=0; st.due=Date.now()+MIN;
+  } else {
+    if(st.reps===0){ st.ivl = grade===4 ? 4 : 1; }
+    else { const f = grade===2 ? 1.2 : grade===3 ? st.ease : st.ease*1.3; st.ivl = Math.max(1, Math.round(st.ivl*f)); }
+    if(grade===2) st.ease=Math.max(1.3, st.ease-0.15);
+    if(grade===4) st.ease=st.ease+0.15;
+    st.reps++; st.due = Date.now()+ st.ivl*DAY;
+  }
+  return st;
+}
+function fmtIvl(st, grade){
+  const n = sched(st, grade);
+  if(n.ivl===0) return "<1м";
+  if(n.ivl===1) return "1д";
+  if(n.ivl<30) return n.ivl+"д";
+  if(n.ivl<365) return Math.round(n.ivl/30)+"мес";
+  return (n.ivl/365).toFixed(1)+"г";
+}
+
+// ---- state ----
+let mode = "study";              // study | browse
+let cat = "all", lvl = "all";
+let flipped = false;
+let queue = [];                  // session queue of card ids (study)
+let bpos = 0, border = [];       // browse
+
+function pool(){ return CARDS.filter(c => (cat==="all"||c.c===cat) && (lvl==="all"||c.lvl===lvl)); }
+function isDue(c){ const s=SRS[c._id]; return !s || (s.due||0) <= Date.now(); }
+function isNew(c){ return !SRS[c._id]; }
+
+// ---- build filters ----
+const catWrap = $("#f-cat"), lvlWrap = $("#f-lvl");
+const cats = ["all", ...[...new Set(CARDS.map(c=>c.c))]];
+cats.forEach(k=>{
+  const b=document.createElement("button"); b.className="chip";
+  b.textContent = k==="all"?"Все":k; b.setAttribute("aria-pressed", k==="all");
+  b.onclick=()=>{ cat=k; [...catWrap.querySelectorAll(".chip")].forEach(x=>x.setAttribute("aria-pressed","false"));
+    b.setAttribute("aria-pressed","true"); restart(); };
+  catWrap.appendChild(b);
+});
+["all",...LEVELS].forEach(k=>{
+  const b=document.createElement("button"); b.className="chip";
+  if(k!=="all") b.dataset.lvl=k; b.textContent=k==="all"?"Все":k; b.setAttribute("aria-pressed",k==="all");
+  b.onclick=()=>{ lvl=k; [...lvlWrap.querySelectorAll(".chip")].forEach(x=>x.setAttribute("aria-pressed","false"));
+    b.setAttribute("aria-pressed","true"); restart(); };
+  lvlWrap.appendChild(b);
+});
+
+// ---- rendering ----
+const card=$("#card"), doneEl=$("#done");
+function setFlip(v){ flipped=v; card.classList.toggle("flip",v);
+  $("#grades").classList.toggle("show", v && mode==="study");
+  $("#reveal").style.display = (mode==="study" && !v) ? "" : "none";
+}
+function fillCard(c){
+  const st=SRS[c._id];
+  $("#f-tag").textContent=c.c; $("#b-tag").textContent=c.c;
+  $("#f-lv").textContent=c.lvl; $("#f-lv").dataset.lvl=c.lvl;
+  $("#b-lv").textContent=c.lvl; $("#b-lv").dataset.lvl=c.lvl;
+  $("#f-q").textContent=c.q; $("#b-q").innerHTML=c.q;
+  const ctxHtml = c.ctx ? '<details class="ctx"><summary>Контекст · зачем и как копают глубже</summary><div class="body">'+c.ctx+'</div></details>' : "";
+  $("#b-a").innerHTML = c.a + (c.img||"") + ctxHtml;
+  if(mode==="study"){
+    $("#b-hint").textContent="1 Снова · 2 Трудно · 3 Хорошо · 4 Легко";
+    $("#i1").textContent=fmtIvl(st,1); $("#i2").textContent=fmtIvl(st,2);
+    $("#i3").textContent=fmtIvl(st,3); $("#i4").textContent=fmtIvl(st,4);
+  } else {
+    $("#b-hint").textContent="← → листать · пробел перевернуть";
+  }
+}
+function updateMeta(){
+  const p=pool();
+  const due=p.filter(c=>!isNew(c)&&isDue(c)).length;
+  const nw=p.filter(isNew).length;
+  const learned=p.filter(c=>SRS[c._id]&&SRS[c._id].reps>0).length;
+  $("#m-due").textContent=due; $("#m-new").textContent=nw;
+  $("#m-learn").textContent=learned; $("#m-total").textContent=p.length;
+  $("#progbar").style.width = p.length ? (learned/p.length*100)+"%" : "0%";
+}
+
+// ---- study flow ----
+function buildQueue(ahead){
+  const p=pool();
+  let q = p.filter(c=>!isNew(c)&&isDue(c));          // due reviews
+  q = q.concat(p.filter(isNew));                      // then new
+  if(ahead && q.length===0) q = p.slice();            // study-ahead: everything
+  queue = q.map(c=>c._id);
+}
+function showStudy(){
+  updateMeta();
+  if(!queue.length){
+    card.style.display="none"; doneEl.style.display="flex";
+    $("#reveal").style.display="none"; $("#grades").classList.remove("show");
+    const anyLeft = pool().length>0;
+    $("#study-ahead").style.display = anyLeft ? "" : "none";
+    $("#done-sub").textContent = anyLeft ? "Повторения по этому фильтру закрыты." : "Нет карточек под фильтр.";
+    return;
+  }
+  card.style.display=""; doneEl.style.display="none";
+  const c = CARDS.find(x=>x._id===queue[0]);
+  fillCard(c); setFlip(false);
+}
+function grade(g){
+  if(mode!=="study"||!flipped||!queue.length) return;
+  const id=queue.shift();
+  SRS[id]=sched(SRS[id], g); saveSRS();
+  if(g===1) queue.push(id);           // «Снова» — вернуть в конец сессии
+  showStudy();
+}
+
+// ---- browse flow ----
+function showBrowse(){
+  border = pool().map(c=>c._id);
+  if(bpos>=border.length) bpos=0;
+  card.style.display=""; doneEl.style.display="none";
+  if(!border.length){ $("#f-q").textContent="Нет карточек под фильтр"; $("#count").textContent="0 / 0"; return; }
+  const c=CARDS.find(x=>x._id===border[bpos]);
+  fillCard(c); setFlip(false);
+  $("#count").textContent=(bpos+1)+" / "+border.length;
+  updateMeta();
+}
+function bgo(d){ if(!border.length)return; bpos=(bpos+d+border.length)%border.length; showBrowse(); }
+
+// ---- mode switch ----
+function setMode(m){
+  mode=m;
+  $("#mode-study").setAttribute("aria-pressed", m==="study");
+  $("#mode-browse").setAttribute("aria-pressed", m==="browse");
+  $("#grades").style.display = m==="study" ? "" : "none";
+  $("#browse").classList.toggle("hide", m!=="browse");
+  $("#reveal").style.display = m==="study" ? "" : "none";
+  restart();
+}
+function restart(){ if(mode==="study"){ buildQueue(false); showStudy(); } else { bpos=0; showBrowse(); } }
+
+// ---- events ----
+card.onclick=()=>{ if(mode==="study"&&!flipped) setFlip(true); else if(mode==="browse") setFlip(!flipped); };
+card.onkeydown=e=>{ if(e.key===" "||e.key==="Enter"){ e.preventDefault(); card.onclick(); } };
+$("#reveal").onclick=()=>setFlip(true);
+document.querySelectorAll(".gr").forEach(b=>b.onclick=()=>grade(+b.dataset.g));
+$("#prev").onclick=()=>bgo(-1);
+$("#next").onclick=()=>bgo(1);
+$("#flipBtn").onclick=()=>setFlip(!flipped);
+$("#shuffle").onclick=()=>{ for(let i=border.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[border[i],border[j]]=[border[j],border[i]];} bpos=0;
+  const c=CARDS.find(x=>x._id===border[bpos]); if(c){fillCard(c);setFlip(false);$("#count").textContent="1 / "+border.length;} };
+$("#study-ahead").onclick=()=>{ buildQueue(true); showStudy(); };
+$("#mode-study").onclick=()=>setMode("study");
+$("#mode-browse").onclick=()=>setMode("browse");
+
+document.addEventListener("keydown",e=>{
+  if(e.target.classList.contains("chip")||e.target.classList.contains("mini"))return;
+  if(mode==="study"){
+    if((e.key===" "||e.key==="Enter")&&!flipped){e.preventDefault();setFlip(true);}
+    else if(flipped&&["1","2","3","4"].includes(e.key)){e.preventDefault();grade(+e.key);}
+  } else {
+    if(e.key==="ArrowRight")bgo(1); else if(e.key==="ArrowLeft")bgo(-1);
+    else if(e.key===" "||e.key==="Enter"){e.preventDefault();setFlip(!flipped);}
+  }
+});
+
+// theme
+const root=document.documentElement;
+$("#theme").onclick=()=>{ const cur=root.getAttribute("data-theme");
+  const dark=cur?cur==="dark":matchMedia("(prefers-color-scheme:dark)").matches;
+  root.setAttribute("data-theme",dark?"light":"dark"); };
+
+// go
+if(!window.CARDS||!CARDS.length){ $("#f-q").textContent="cards.js не загрузился"; }
+else setMode("study");
+</script>
