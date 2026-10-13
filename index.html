@@ -29,6 +29,7 @@
     color-scheme:dark;
   }
   *{box-sizing:border-box}
+  [hidden]{display:none!important}
   body{background:var(--bg);color:var(--fg);font-family:var(--sans);line-height:1.5;-webkit-font-smoothing:antialiased}
   .wrap{max-width:720px;margin:0 auto;padding-inline:16px;padding-block:16px 128px;min-height:100%}
 
@@ -151,6 +152,23 @@
     .btn{padding:10px 12px;font-size:.84rem}
   }
   @media (prefers-reduced-motion:reduce){.card,.gr{transition:none}}
+
+  /* progress modal */
+  .modal{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;
+    background:rgba(0,0,0,.45);padding:16px}
+  .sheet{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);
+    width:100%;max-width:440px;max-height:85vh;overflow:auto;padding:22px 20px}
+  .sheet h2{margin:0 0 14px;font-size:1.15rem}
+  .pstats{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+  .pstat{flex:1;min-width:90px;border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+  .pstat .n{font-size:1.4rem;font-weight:700;font-variant-numeric:tabular-nums}
+  .pstat .l{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;font-family:var(--mono)}
+  .sheet .row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+  .sheet textarea{width:100%;min-height:92px;border:1px solid var(--line);border-radius:10px;background:var(--bg);
+    color:var(--fg);font-family:var(--mono);font-size:.78rem;padding:10px;resize:vertical}
+  .sheet textarea[hidden]{display:none}
+  .note{font-size:.78rem;color:var(--muted);margin:2px 0 14px}
+  .btn.danger{border-color:var(--g-again);color:var(--g-again)}
 </style>
 
 <div class="wrap">
@@ -159,6 +177,7 @@
     <div class="top-btns">
       <button class="mini" id="mode-study" aria-pressed="true">учить</button>
       <button class="mini" id="mode-browse" aria-pressed="false">все</button>
+      <button class="mini" id="cog" aria-label="Прогресс">⚙</button>
       <button class="mini" id="theme" aria-label="Тема">◐</button>
     </div>
   </header>
@@ -215,6 +234,34 @@
       </div>
     </div>
   </nav>
+
+  <div class="modal" id="modal" hidden>
+    <div class="sheet">
+      <h2>Прогресс</h2>
+      <div class="pstats">
+        <div class="pstat"><div class="n" id="ps-learn">0</div><div class="l">изучено</div></div>
+        <div class="pstat"><div class="n" id="ps-due">0</div><div class="l">к повтору</div></div>
+        <div class="pstat"><div class="n" id="ps-new">0</div><div class="l">новых</div></div>
+      </div>
+      <p class="note">Прогресс хранится в этом браузере. Экспортируй, чтобы перенести на другое устройство (аналог бэкапа Anki).</p>
+      <div class="row">
+        <button class="btn" id="exp">Экспорт</button>
+        <button class="btn" id="imp">Импорт</button>
+        <button class="btn" id="file-btn">Из файла</button>
+        <input type="file" id="file" accept=".json,application/json" hidden>
+      </div>
+      <textarea id="io" hidden placeholder='Вставь сюда JSON прогресса и нажми «Применить»'></textarea>
+      <div class="row" id="io-row" hidden>
+        <button class="btn" id="apply">Применить</button>
+        <span class="note" id="io-msg" style="margin:0;align-self:center"></span>
+      </div>
+      <div class="row" style="margin-top:6px">
+        <button class="btn danger" id="rst">Сбросить прогресс</button>
+        <span class="grow"></span>
+        <button class="btn" id="close">Закрыть</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script src="cards.js" charset="utf-8"></script>
@@ -318,11 +365,12 @@ function updateMeta(){
 }
 
 // ---- study flow ----
+function shuf(a){ for(let i=a.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[a[i],a[j]]=[a[j],a[i]];} return a; }
 function buildQueue(ahead){
   const p=pool();
-  let q = p.filter(c=>!isNew(c)&&isDue(c));          // due reviews
-  q = q.concat(p.filter(isNew));                      // then new
-  if(ahead && q.length===0) q = p.slice();            // study-ahead: everything
+  let q = shuf(p.filter(c=>!isNew(c)&&isDue(c)))      // due reviews (случайный порядок)
+          .concat(shuf(p.filter(isNew)));             // then new (случайный порядок)
+  if(ahead && q.length===0) q = shuf(p.slice());      // study-ahead: everything, вперемешку
   queue = q.map(c=>c._id);
 }
 function showStudy(){
@@ -402,6 +450,47 @@ const root=document.documentElement;
 $("#theme").onclick=()=>{ const cur=root.getAttribute("data-theme");
   const dark=cur?cur==="dark":matchMedia("(prefers-color-scheme:dark)").matches;
   root.setAttribute("data-theme",dark?"light":"dark"); };
+
+// progress panel
+const modal=$("#modal"); let rstArmed=false;
+function refreshStats(){
+  $("#ps-learn").textContent = CARDS.filter(c=>SRS[c._id]&&SRS[c._id].reps>0).length;
+  $("#ps-due").textContent  = CARDS.filter(c=>!isNew(c)&&isDue(c)).length;
+  $("#ps-new").textContent  = CARDS.filter(isNew).length;
+}
+function openModal(){ refreshStats(); $("#io").hidden=true; $("#io-row").hidden=true; $("#io-msg").textContent="";
+  $("#rst").textContent="Сбросить прогресс"; rstArmed=false; modal.hidden=false; }
+$("#cog").onclick=openModal;
+$("#close").onclick=()=>{ modal.hidden=true; };
+modal.onclick=e=>{ if(e.target===modal) modal.hidden=true; };
+$("#exp").onclick=()=>{
+  const json=JSON.stringify(SRS);
+  const ta=$("#io"); ta.hidden=false; ta.value=json; ta.select();
+  $("#io-row").hidden=false; $("#apply").textContent="Применить из поля";
+  let msg="скопируй текст или скачай файл";
+  try{ navigator.clipboard.writeText(json).then(()=>{},()=>{}); msg="скопировано в буфер + файл"; }catch(e){}
+  try{ const a=document.createElement("a");
+    a.href=URL.createObjectURL(new Blob([json],{type:"application/json"}));
+    a.download="py-sobes-progress.json"; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+  }catch(e){}
+  $("#io-msg").textContent=msg;
+};
+$("#imp").onclick=()=>{ const ta=$("#io"); ta.hidden=false; ta.value=""; $("#io-row").hidden=false;
+  $("#apply").textContent="Применить из поля"; $("#io-msg").textContent="вставь JSON и «Применить»"; ta.focus(); };
+$("#file-btn").onclick=()=>$("#file").click();
+$("#file").onchange=e=>{ const f=e.target.files[0]; if(!f)return; const r=new FileReader(); r.onload=()=>applyProgress(r.result); r.readAsText(f); };
+$("#apply").onclick=()=>applyProgress($("#io").value);
+function applyProgress(txt){
+  try{ const obj=JSON.parse(txt); if(!obj||typeof obj!=="object"||Array.isArray(obj)) throw 0;
+    SRS=obj; saveSRS(); refreshStats(); restart();
+    $("#io").hidden=false; $("#io-row").hidden=false; $("#io-msg").textContent="импортировано ✓";
+  }catch(e){ $("#io").hidden=false; $("#io-row").hidden=false; $("#io-msg").textContent="не похоже на JSON прогресса"; }
+}
+$("#rst").onclick=()=>{
+  if(!rstArmed){ rstArmed=true; $("#rst").textContent="Точно сбросить? ещё раз"; return; }
+  SRS={}; saveSRS(); modal.hidden=true; restart();
+};
+document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&!modal.hidden) modal.hidden=true; });
 
 // go
 if(!window.CARDS||!CARDS.length){ $("#f-q").textContent="cards.js не загрузился"; }

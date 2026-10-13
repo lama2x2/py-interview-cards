@@ -394,7 +394,8 @@ window.CARDS = [
    img:`<svg class="dgm" viewBox="0 0 230 165" width="230" xmlns="http://www.w3.org/2000/svg"><polygon class="fl" points="115,22 28,138 202,138"/><polygon class="ac" points="115,22 28,138 202,138"/><text x="115" y="16" text-anchor="middle">Consistency</text><text x="22" y="152">Availability</text><text x="208" y="152" text-anchor="end">Partition tol.</text><text class="mut" x="115" y="98" text-anchor="middle">выбери 2</text></svg>`},
   {c:"Архитектура",lvl:"Синьер",q:"Паттерн transactional outbox — зачем?",
    a:`Проблема: нельзя атомарно и в БД записать, и в брокер отправить.<ul>
-   <li>Пишем событие в таблицу outbox в той же транзакции, отдельный процесс дочитывает и публикует → надёжная доставка.</li></ul>`},
+   <li>Пишем событие в таблицу outbox в той же транзакции, отдельный процесс дочитывает и публикует → надёжная доставка.</li></ul>`,
+   img:`<svg class="dgm" viewBox="0 0 330 120" width="330" xmlns="http://www.w3.org/2000/svg"><rect class="bx" x="8" y="48" width="56" height="30" rx="6"/><text x="36" y="67" text-anchor="middle">App</text><text x="150" y="24" text-anchor="middle" class="mut">1 транзакция</text><rect class="bxa" x="95" y="30" width="110" height="68" rx="8"/><rect class="bx" x="105" y="40" width="90" height="22" rx="4"/><text x="150" y="55" text-anchor="middle">data</text><rect class="bx" x="105" y="66" width="90" height="22" rx="4"/><text x="150" y="81" text-anchor="middle">outbox</text><rect class="bx" x="234" y="48" width="54" height="30" rx="6"/><text x="261" y="67" text-anchor="middle">relay</text><path class="ac" d="M64 63 L95 63"/><path class="ln" d="M205 72 L234 66"/><path class="ln" d="M288 63 L312 63"/><text class="mut" x="322" y="67" text-anchor="end">Kafka</text></svg>`},
   {c:"Архитектура",lvl:"Синьер",q:"Распределённые транзакции: 2PC и саги?",
    a:`<ul><li><b>2PC</b> — блокирующий, плохо масштабируется, падение координатора = беда.</li>
    <li><b>Saga</b> — цепочка локальных транзакций с компенсациями при откате; eventual consistency.</li></ul>`},
@@ -411,7 +412,8 @@ window.CARDS = [
    <li><b>write-around</b> — мимо кеша в БД, кеш греется на чтении.</li></ul>`},
   {c:"SQL",lvl:"Синьер",q:"Что такое MVCC в Postgres и откуда bloat?",
    a:`MVCC: UPDATE/DELETE не меняют строку на месте, а создают новую версию → читатели не блокируют писателей.<ul>
-   <li>Мёртвые версии = <b>bloat</b>, их чистит <code>VACUUM</code>/autovacuum.</li></ul>`},
+   <li>Мёртвые версии = <b>bloat</b>, их чистит <code>VACUUM</code>/autovacuum.</li></ul>`,
+   img:`<svg class="dgm" viewBox="0 0 320 118" width="320" xmlns="http://www.w3.org/2000/svg"><text x="8" y="13" class="mut">версии строки</text><rect class="bx" x="20" y="30" width="72" height="26" rx="5"/><text x="56" y="47" text-anchor="middle">v1</text><rect class="bx" x="112" y="30" width="72" height="26" rx="5"/><text x="148" y="47" text-anchor="middle">v2</text><rect class="bxa" x="204" y="30" width="86" height="26" rx="5"/><text x="247" y="47" text-anchor="middle">v3 live</text><path class="ln" d="M92 43 L112 43"/><path class="ln" d="M184 43 L204 43"/><path class="ac" d="M56 72 L56 58"/><text class="mut" x="56" y="86" text-anchor="middle">старый</text><text class="mut" x="56" y="99" text-anchor="middle">снапшот</text><text class="mut" x="200" y="92" text-anchor="middle">v1,v2 мертвы → VACUUM</text></svg>`},
   {c:"SQL",lvl:"Синьер",q:"Оптимистичная vs пессимистичная блокировка?",
    a:`<ul><li><b>Пессимистичная</b>: <code>SELECT ... FOR UPDATE</code> — заблокировать строку.</li>
    <li><b>Оптимистичная</b>: колонка <code>version</code>, при UPDATE проверяем, что не изменилась; иначе ретрай. Меньше блокировок.</li></ul>`},
@@ -433,7 +435,8 @@ window.CARDS = [
   {c:"Архитектура",lvl:"Синьер",q:"Rate limiting: token bucket vs leaky bucket vs sliding window?",
    a:`<ul><li><b>Token bucket</b> — допускает всплески до размера ведра.</li>
    <li><b>Leaky bucket</b> — ровный выходной поток.</li>
-   <li><b>Sliding window</b> — точный учёт по скользящему окну.</li></ul>`},
+   <li><b>Sliding window</b> — точный учёт по скользящему окну.</li></ul>`,
+   img:`<svg class="dgm" viewBox="0 0 320 140" width="320" xmlns="http://www.w3.org/2000/svg"><text x="78" y="13" text-anchor="middle" class="mut">token bucket</text><path class="ac" d="M45 28 L111 28 L101 98 L55 98 Z"/><circle class="fl" cx="68" cy="78" r="6"/><circle class="fl" cx="84" cy="80" r="6"/><circle class="fl" cx="76" cy="64" r="6"/><text class="mut" x="78" y="122" text-anchor="middle">всплеск ок</text><text x="242" y="13" text-anchor="middle" class="mut">leaky bucket</text><path class="ac2" d="M209 28 L275 28 L265 98 L219 98 Z"/><path class="ac2" d="M242 98 L242 112"/><circle class="fl2" cx="242" cy="118" r="4"/><text class="mut" x="242" y="134" text-anchor="middle">ровный выход</text></svg>`},
   {c:"Архитектура",lvl:"Синьер",q:"Как сделать идемпотентный API-эндпоинт?",
    a:`Клиент шлёт <b>Idempotency-Key</b>; сервер хранит ключ→результат.<ul>
    <li>Повтор с тем же ключом возвращает сохранённый ответ, не выполняя повторно (важно для платежей).</li></ul>`},
@@ -445,7 +448,8 @@ window.CARDS = [
    <li>Correlation id сшивает всё; смотреть p95/p99, не среднее.</li></ul>`},
   {c:"Архитектура",lvl:"Синьер",q:"Circuit breaker и retry — как не усугубить?",
    a:`<ul><li><b>Circuit breaker</b> размыкает вызовы к упавшему сервису, давая восстановиться.</li>
-   <li>Retry — с <b>экспоненциальным backoff + jitter</b>, иначе ретраи добьют сервис.</li></ul>`},
+   <li>Retry — с <b>экспоненциальным backoff + jitter</b>, иначе ретраи добьют сервис.</li></ul>`,
+   img:`<svg class="dgm" viewBox="0 0 320 120" width="320" xmlns="http://www.w3.org/2000/svg"><rect class="bxa" x="8" y="46" width="88" height="34" rx="8"/><text x="52" y="67" text-anchor="middle">CLOSED</text><rect class="bx" x="116" y="46" width="80" height="34" rx="8"/><text x="156" y="67" text-anchor="middle">OPEN</text><rect class="bx" x="216" y="46" width="96" height="34" rx="8"/><text x="264" y="63" text-anchor="middle">HALF-</text><text x="264" y="76" text-anchor="middle">OPEN</text><path class="ac" d="M96 57 L116 57"/><text class="mut" x="106" y="42" text-anchor="middle">ошибки</text><path class="ln" d="M196 70 L216 70"/><text class="mut" x="206" y="96" text-anchor="middle">таймаут</text><path class="ln" d="M264 46 C264 16,52 16,52 46"/><text class="mut" x="160" y="13" text-anchor="middle">успех → закрыть</text></svg>`},
   {c:"Архитектура",lvl:"Синьер",q:"Strong vs eventual consistency?",
    a:`<ul><li><b>Strong</b> — после записи все читают новое (дороже, меньше доступность).</li>
    <li><b>Eventual</b> — реплики сойдутся через время; подходит лентам/кешам/счётчикам.</li></ul>`},
@@ -636,8 +640,54 @@ window.CARDS = [
    <li>Сложность O(log n). На неотсортированных не работает.</li></ul>`},
   {c:"Алгоритмы",lvl:"Мид",q:"Стек vs очередь?",
    a:`<ul><li><b>Стек</b> — LIFO (последним пришёл — первым вышел), напр. вызовы функций, отмена.</li>
-   <li><b>Очередь</b> — FIFO, напр. задачи на обработку. В Python — <code>collections.deque</code>.</li></ul>`},
+   <li><b>Очередь</b> — FIFO, напр. задачи на обработку. В Python — <code>collections.deque</code>.</li></ul>`,
+   img:`<svg class="dgm" viewBox="0 0 320 120" width="320" xmlns="http://www.w3.org/2000/svg"><text x="72" y="13" text-anchor="middle" class="mut">стек · LIFO</text><rect class="bxa" x="40" y="26" width="64" height="20" rx="3"/><text x="72" y="40" text-anchor="middle">top</text><rect class="bx" x="40" y="48" width="64" height="20" rx="3"/><rect class="bx" x="40" y="70" width="64" height="20" rx="3"/><text class="mut" x="72" y="108" text-anchor="middle">push/pop сверху</text><text x="242" y="13" text-anchor="middle" class="mut">очередь · FIFO</text><rect class="bxa" x="186" y="46" width="30" height="26" rx="3"/><rect class="bx" x="218" y="46" width="30" height="26" rx="3"/><rect class="bx" x="250" y="46" width="30" height="26" rx="3"/><path class="ac" d="M160 59 L184 59"/><text class="mut" x="152" y="44" text-anchor="middle">in</text><path class="ac" d="M282 59 L306 59"/><text class="mut" x="300" y="44" text-anchor="middle">out</text></svg>`},
   {c:"Алгоритмы",lvl:"Синьер",q:"BFS vs DFS — различия и когда?",
    a:`<ul><li><b>BFS</b> (в ширину, очередь) — кратчайший путь в невзвешенном графе, по уровням.</li>
    <li><b>DFS</b> (в глубину, стек/рекурсия) — обход, топосортировка, поиск циклов.</li></ul>`},
+
+  // ========================= ЧАСТОТНЫЕ / SYSTEM DESIGN / АЛГО-РАЗМИНКИ =========================
+  {c:"Архитектура",lvl:"Синьер",q:"Спроектируй REST API для платёжной системы — что учесть?",
+   a:`<ul><li><b>Идемпотентность</b>: Idempotency-Key, чтобы повтор не списал дважды.</li>
+   <li>Платёж как <b>state machine</b> (created→pending→success/failed), переходы атомарны в транзакции.</li>
+   <li>Консистентность денег > доступности; аудит-лог, вебхуки о статусе, ретраи с backoff, защита от гонок (блокировки/версии).</li></ul>`},
+  {c:"Архитектура",lvl:"Синьер",q:"Как спроектировать сократитель ссылок (URL shortener)?",
+   a:`<ul><li>Короткий код = base62 от автоинкремент-id или хеш; хранить map code→url в БД.</li>
+   <li>Чтение >> запись → агрессивный кеш (Redis), редирект 301/302.</li>
+   <li>Масштаб: шардирование по code, counter-сервис/Snowflake для id, аналитика отдельно.</li></ul>`},
+  {c:"Архитектура",lvl:"Синьер",q:"Как сделать распределённый rate limiter?",
+   a:`<ul><li>Состояние — в общем хранилище (Redis), чтобы лимит был на всех инстансах.</li>
+   <li>Token bucket через <code>INCR</code>+<code>EXPIRE</code> или Lua-скрипт (атомарно, без гонок).</li>
+   <li>Ключ по userId/IP/endpoint; при превышении — 429 + Retry-After.</li></ul>`},
+  {c:"Общее",lvl:"Мид",q:"Что происходит, когда вводишь URL и жмёшь Enter?",
+   a:`<ol><li>DNS резолвит домен в IP.</li><li>TCP-соединение + TLS-handshake (HTTPS).</li>
+   <li>HTTP-запрос → сервер (возможно через LB/CDN/реверс-прокси).</li>
+   <li>Ответ → браузер парсит HTML, грузит ресурсы, рендерит.</li></ol>`},
+  {c:"Общее",lvl:"Мид",q:"TCP vs UDP?",
+   a:`<ul><li><b>TCP</b> — соединение, гарантия доставки и порядка, контроль потока. HTTP, БД.</li>
+   <li><b>UDP</b> — без гарантий, быстрый, без установки соединения. Видео, игры, DNS, QUIC.</li></ul>`},
+  {c:"Python",lvl:"Мид",q:"Что такое идиоматичный (pythonic) код? EAFP vs LBYL?",
+   a:`<ul><li><b>EAFP</b> («проще просить прощения») — попробовать и поймать исключение; питоничнее.</li>
+   <li><b>LBYL</b> («посмотри перед прыжком») — проверки до действия; ловит TOCTOU-гонки.</li>
+   <li>Pythonic: comprehension, <code>with</code>, <code>enumerate</code>/<code>zip</code>, распаковка, без лишних проверок типов.</li></ul>`},
+  {c:"Python",lvl:"Мид",q:"Напиши свой контекстный менеджер (2 способа).",
+   a:`<ul><li><b>Класс:</b> методы <code>__enter__</code> (вернуть ресурс) и <code>__exit__</code> (освободить, обработать исключение).</li>
+   <li><b>Функция:</b> <code>@contextlib.contextmanager</code> + <code>try: yield res; finally: cleanup</code>.</li></ul>`},
+  {c:"Python",lvl:"Мид",q:"Чем полезны dataclass с frozen=True и slots=True?",
+   a:`<ul><li><b>frozen=True</b> — иммутабельный, становится хешируемым (можно в set/ключ).</li>
+   <li><b>slots=True</b> — без <code>__dict__</code>, экономит память и ускоряет доступ.</li></ul>`},
+  {c:"Алгоритмы",lvl:"Мид",q:"Как найти дубликаты и развернуть последовательность?",
+   a:`<ul><li>Дубликаты: <code>set</code> для виденных, O(n); или <code>Counter</code>.</li>
+   <li>Разворот: <code>s[::-1]</code> (строка/список), <code>reversed()</code> для итератора.</li></ul>`},
+  {c:"Алгоритмы",lvl:"Синьер",q:"Two Sum: найти два числа с суммой target — оптимально?",
+   a:`Хеш-мапа за один проход: для каждого <code>x</code> ищем <code>target - x</code> среди виденных.<ul>
+   <li>Время O(n), память O(n). Наивно — O(n²). Классический скрининг.</li></ul>`},
+  {c:"Команда",lvl:"Мид",q:"Как готовиться к алгоритмической секции?",
+   a:`<ul><li>Паттерны: two pointers, hashmap, sliding window, стек, BFS/DFS, бинпоиск.</li>
+   <li>Проговаривать вслух, уточнять условие и крайние случаи, называть сложность.</li>
+   <li>Сначала рабочее решение, потом оптимизация.</li></ul>`},
+  {c:"Архитектура",lvl:"Синьер",q:"Как подойти к System Design в условиях ограниченного времени?",
+   a:`<ol><li>Требования + масштаб (QPS, объём, latency, consistency).</li>
+   <li>API и модель данных.</li><li>Схема: сервисы, БД, кеш, очередь, LB.</li>
+   <li>Узкие места: шардирование, репликация, кеш, отказоустойчивость. Проговаривать компромиссы.</li></ol>`},
 ];
